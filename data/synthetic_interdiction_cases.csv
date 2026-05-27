@@ -1,0 +1,4 @@
+id,networkId,title,amountAtRisk,entities,status
+case_001,NW-MUM-4451,Circular low-ticket merchant laundering mesh,4830000,32,HELD
+case_002,NW-BLR-1180,Synthetic VPA mule chain,1275000,17,IN_REVIEW
+

@@ -1,0 +1,5 @@
+id,entityType,handle,bank,deviceHash,riskScore,velocityScore,linkedEntities,status
+ent_001,MERCHANT,merchant-red-772@upi,Axis Bank,dev_8f2a91,94,91,44,BLOCK
+ent_002,VPA,rahul9981@oksbi,SBI,dev_8f2a91,88,82,29,REVIEW
+ent_003,DEVICE,android-fp-29a7,Multi-bank,dev_29a7cc,76,68,18,WATCH
+
