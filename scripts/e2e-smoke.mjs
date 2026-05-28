@@ -81,8 +81,9 @@ try {
   for (let index = 0; index < navCount; index += 1) {
     const tab = navItems.nth(index);
     await tab.click();
-    await page.waitForTimeout(80);
-    assert(await tab.getAttribute('aria-pressed') === 'true', `Sidebar tab ${index + 1} did not become active.`);
+    await page.waitForFunction((tabIndex) => {
+      return document.querySelectorAll('.nav-item')[tabIndex]?.getAttribute('aria-pressed') === 'true';
+    }, index, { timeout: 10000 });
   }
   await page.getByRole('button', { name: 'Mule Graph AI' }).click();
 
@@ -93,6 +94,15 @@ try {
   await clickAction(page, 0, 'domain decision');
   await page.locator('.graph-canvas').waitFor({ timeout: 10000 });
   await page.getByText('CIRCULAR_REFUND_LOOP').waitFor({ timeout: 10000 });
+  await page.locator('.case-badge').filter({ hasText: 'Active investigation' }).waitFor({ timeout: 10000 });
+  await page.locator('.graph-stats').filter({ hasText: 'hot nodes' }).waitFor({ timeout: 10000 });
+  await page.getByPlaceholder('Entity, VPA, device, case').fill('merchant');
+  await page.locator('.graph-filter').filter({ hasText: 'Device' }).click();
+  await page.locator('.graph-filter.active').filter({ hasText: 'Device' }).waitFor({ timeout: 10000 });
+  await page.getByPlaceholder('Entity, VPA, device, case').fill('');
+  await page.locator('.graph-controls button').filter({ hasText: '+' }).click();
+  await page.locator('.graph-controls button').filter({ hasText: 'Reset' }).click();
+  await page.locator('.relationship-list').filter({ hasText: 'Fund flow connections' }).waitFor({ timeout: 10000 });
   await page.waitForFunction(() => {
     const result = document.querySelector('.recommendation-card strong');
     return result && result.textContent && !result.textContent.includes('Run model');
@@ -131,6 +141,7 @@ try {
       frameworkOverlay: false,
       sidebarTabs: navCount,
       domainDecision: true,
+      graphControls: true,
       mockUpi: true,
       crud: true,
       viewerRbacDenial: true,

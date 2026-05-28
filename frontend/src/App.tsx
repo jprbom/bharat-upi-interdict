@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import cytoscape from 'cytoscape';
 import { Activity, AlertTriangle, BrainCircuit, CheckCircle2, Database, Eye, FileCheck2, Lock, Network, RefreshCw, Route, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { apiRequest } from './api';
@@ -360,15 +360,68 @@ function DetailCard({ item }: { item: RecordItem }) {
   return <div className="case-card">{Object.entries(item).filter(([key]) => !['id', 'createdAt'].includes(key)).slice(0, 6).map(([key, value]) => <p key={key}><strong>{key}</strong>: {formatValue(key, value)}</p>)}</div>;
 }
 
+const GRAPH_TYPE_COLORS: Record<string, string> = {
+  VICTIM: '#22c55e',
+  MERCHANT: '#ef4444',
+  DEVICE: '#06b6d4',
+  VPA: '#f59e0b',
+  BANK_ACCOUNT: '#f97316',
+  CASE: '#8b5cf6'
+};
+
+function graphTypeColor(type: string) {
+  return GRAPH_TYPE_COLORS[type] ?? '#64748b';
+}
+
+function graphFilterKey(type: string) {
+  return type === 'BANK_ACCOUNT' ? 'account' : type.toLowerCase();
+}
+
+function entityInitials(label: string) {
+  return label
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'UP';
+}
+
 function MuleGraphView({ graph }: { graph: MuleGraph }) {
   const graphRef = useRef<HTMLDivElement>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
   const [selectedNode, setSelectedNode] = useState(graph.nodes[0]);
   const [selectedEdge, setSelectedEdge] = useState(graph.edges[0]);
+  const [nodeFilter, setNodeFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const topRiskNodes = [...graph.nodes].sort((a, b) => b.riskScore - a.riskScore).slice(0, 3);
   const shortLabel = (value: string) => value.length > 22 ? value.slice(0, 20) + '..' : value;
+  const totalAtRisk = graph.nodes.reduce((sum, node) => sum + node.amountAtRisk, 0);
+  const highRiskCount = graph.nodes.filter((node) => node.riskScore >= 80).length;
+  const maxRisk = Math.max(...graph.nodes.map((node) => node.riskScore));
+  const selectedConnections = graph.edges
+    .filter((edge) => edge.source === selectedNode.id || edge.target === selectedNode.id)
+    .slice(0, 6);
+  const filterOptions = [
+    ['all', 'All'],
+    ['merchant', 'Merchant'],
+    ['vpa', 'VPA'],
+    ['device', 'Device'],
+    ['account', 'Sink'],
+    ['victim', 'Victim'],
+    ['case', 'Case']
+  ];
+  const riskGaugeStyle = {
+    '--risk': selectedNode.riskScore * 3.6 + 'deg',
+    '--risk-color': graphTypeColor(selectedNode.type)
+  } as CSSProperties;
 
   useEffect(() => {
     if (!graphRef.current) return;
+    setSelectedNode(graph.nodes[0]);
+    setSelectedEdge(graph.edges[0]);
 
     const cy = cytoscape({
       container: graphRef.current,
@@ -377,7 +430,9 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
         ...graph.nodes.map((node) => ({
           data: {
             ...node,
-            displayLabel: shortLabel(node.label)
+            displayLabel: shortLabel(node.label),
+            initials: entityInitials(node.label),
+            typeKey: graphFilterKey(node.type)
           },
           position: {
             x: node.x * 9.2,
@@ -404,18 +459,19 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           selector: 'node',
           style: {
             label: 'data(displayLabel)',
-            width: 'mapData(riskScore, 0, 100, 34, 76)',
-            height: 'mapData(riskScore, 0, 100, 34, 76)',
+            width: 'mapData(riskScore, 0, 100, 40, 86)',
+            height: 'mapData(riskScore, 0, 100, 40, 86)',
             'background-color': '#ef4444',
-            'background-gradient-stop-colors': '#fb7185 #facc15',
+            'background-opacity': 0.16,
+            'background-gradient-stop-colors': '#fecaca #ef4444',
             'background-gradient-direction': 'to-bottom-right',
-            'border-width': 3,
-            'border-color': '#fff7ed',
+            'border-width': 4,
+            'border-color': '#ef4444',
             'font-size': 11,
             'font-weight': 800,
             color: '#111827',
             'text-background-color': '#ffffff',
-            'text-background-opacity': 0.82,
+            'text-background-opacity': 0.88,
             'text-background-padding': 4,
             'text-background-shape': 'roundrectangle',
             'text-margin-y': 9,
@@ -432,21 +488,24 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           selector: 'node[type = "VICTIM"]',
           style: {
             'background-color': '#22c55e',
-            'background-gradient-stop-colors': '#86efac #14b8a6'
+            'border-color': '#16a34a',
+            'background-gradient-stop-colors': '#dcfce7 #22c55e'
           }
         },
         {
           selector: 'node[type = "DEVICE"]',
           style: {
             'background-color': '#06b6d4',
-            'background-gradient-stop-colors': '#67e8f9 #2563eb'
+            'border-color': '#0891b2',
+            'background-gradient-stop-colors': '#cffafe #06b6d4'
           }
         },
         {
           selector: 'node[type = "CASE"]',
           style: {
             'background-color': '#8b5cf6',
-            'background-gradient-stop-colors': '#c4b5fd #7c3aed',
+            'border-color': '#7c3aed',
+            'background-gradient-stop-colors': '#ede9fe #8b5cf6',
             shape: 'round-rectangle'
           }
         },
@@ -454,7 +513,8 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           selector: 'node[type = "BANK_ACCOUNT"]',
           style: {
             'background-color': '#f97316',
-            'background-gradient-stop-colors': '#fdba74 #ea580c',
+            'border-color': '#ea580c',
+            'background-gradient-stop-colors': '#ffedd5 #f97316',
             shape: 'hexagon'
           }
         },
@@ -462,8 +522,16 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           selector: 'node[type = "VPA"]',
           style: {
             'background-color': '#f59e0b',
-            'background-gradient-stop-colors': '#fde68a #f59e0b',
+            'border-color': '#d97706',
+            'background-gradient-stop-colors': '#fef3c7 #f59e0b',
             shape: 'diamond'
+          }
+        },
+        {
+          selector: 'node[status = "BLOCK"]',
+          style: {
+            'border-style': 'double',
+            'border-width': 6
           }
         },
         {
@@ -497,6 +565,20 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           }
         },
         {
+          selector: 'edge[riskWeight >= 80]',
+          style: {
+            'line-color': '#ef4444',
+            'target-arrow-color': '#ef4444'
+          }
+        },
+        {
+          selector: 'edge[riskWeight >= 50][riskWeight < 80]',
+          style: {
+            'line-color': '#f97316',
+            'target-arrow-color': '#f97316'
+          }
+        },
+        {
           selector: 'edge[edgeType = "DEVICE_REUSE"]',
           style: {
             'line-color': '#06b6d4',
@@ -526,11 +608,53 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
             opacity: 1,
             width: 8
           }
+        },
+        {
+          selector: '.faded',
+          style: {
+            opacity: 0.13,
+            'text-opacity': 0.08
+          }
+        },
+        {
+          selector: 'edge.faded',
+          style: {
+            opacity: 0.05
+          }
+        },
+        {
+          selector: '.filtered-out',
+          style: {
+            opacity: 0.08,
+            'text-opacity': 0.04
+          }
+        },
+        {
+          selector: '.active-node',
+          style: {
+            'border-color': '#111827',
+            'border-width': 7,
+            'overlay-opacity': 0.16
+          }
+        },
+        {
+          selector: 'edge.active-edge',
+          style: {
+            opacity: 1,
+            width: 'mapData(riskWeight, 0, 100, 4, 10)'
+          }
         }
       ] as any
     });
+    cyRef.current = cy;
 
     cy.on('tap', 'node', (event) => {
+      cy.elements().removeClass('faded active-node active-edge');
+      const node = event.target;
+      const related = node.closedNeighborhood();
+      cy.elements().not(related).addClass('faded');
+      node.addClass('active-node');
+      node.connectedEdges().addClass('active-edge');
       const data = event.target.data() as MuleGraph['nodes'][number] & { displayLabel: string };
       setSelectedNode({
         id: data.id,
@@ -544,6 +668,8 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
       });
     });
     cy.on('tap', 'edge', (event) => {
+      cy.edges().removeClass('active-edge');
+      event.target.addClass('active-edge');
       const data = event.target.data() as MuleGraph['edges'][number];
       setSelectedEdge({
         id: data.id,
@@ -556,36 +682,124 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
         riskWeight: data.riskWeight
       });
     });
+    cy.on('tap', (event) => {
+      if (event.target === cy) {
+        cy.elements().removeClass('faded active-node active-edge');
+      }
+    });
     cy.ready(() => {
       cy.fit(undefined, 42);
       cy.nodes('[riskScore >= 85]').select();
       window.setTimeout(() => cy.nodes().unselect(), 850);
     });
 
-    return () => cy.destroy();
+    let hotPulse = false;
+    const pulseTimer = window.setInterval(() => {
+      hotPulse = !hotPulse;
+      cy.edges('[riskWeight >= 80]').style({
+        opacity: hotPulse ? 1 : 0.62,
+        width: hotPulse ? 8 : 5
+      });
+    }, 950);
+
+    return () => {
+      window.clearInterval(pulseTimer);
+      cy.destroy();
+      cyRef.current = null;
+    };
   }, [graph]);
+
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    const query = search.trim().toLowerCase();
+    cy.elements().removeClass('filtered-out');
+    cy.nodes().forEach((node) => {
+      const haystack = [
+        node.data('label'),
+        node.data('type'),
+        node.data('status'),
+        node.data('id')
+      ].join(' ').toLowerCase();
+      const matchesFilter = nodeFilter === 'all' || node.data('typeKey') === nodeFilter;
+      const matchesSearch = !query || haystack.includes(query);
+      if (!matchesFilter || !matchesSearch) {
+        node.addClass('filtered-out');
+      }
+    });
+    cy.edges().forEach((edge) => {
+      if (edge.source().hasClass('filtered-out') || edge.target().hasClass('filtered-out')) {
+        edge.addClass('filtered-out');
+      }
+    });
+  }, [nodeFilter, search, graph]);
+
+  function zoomGraph(direction: 'in' | 'out' | 'reset') {
+    const cy = cyRef.current;
+    if (!cy) return;
+    if (direction === 'reset') {
+      cy.fit(undefined, 42);
+      return;
+    }
+    cy.zoom({
+      level: cy.zoom() * (direction === 'in' ? 1.22 : 0.82),
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 }
+    });
+  }
 
   return (
     <div className="mule-graph-layout">
       <div className="graph-stage">
         <div className="graph-toolbar">
           <div>
-            <span>Interactive fraud graph</span>
+            <span>Fund flow intelligence</span>
             <strong>{graph.nodes.length} entities / {graph.edges.length} risk edges</strong>
           </div>
+          <label className="graph-search">
+            <span>Search</span>
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Entity, VPA, device, case" />
+          </label>
+          <div className="graph-stats">
+            <span><b>{highRiskCount}</b>hot nodes</span>
+            <span><b>{formatValue('amount', totalAtRisk)}</b>at risk</span>
+            <span><b>{maxRisk}</b>max risk</span>
+          </div>
+        </div>
+        <div className="graph-filter-bar">
+          {filterOptions.map(([key, label]) => (
+            <button className={nodeFilter === key ? 'graph-filter active' : 'graph-filter'} key={key} onClick={() => setNodeFilter(key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="case-badge">Active investigation - pre-settlement hold simulator</div>
+        <div ref={graphRef} className="graph-canvas" aria-label="Interactive complex mule money laundering graph" />
+        <div className="graph-footer">
           <div className="graph-legend">
             <span className="legend victim">Victim</span>
             <span className="legend merchant">Merchant</span>
             <span className="legend device">Device</span>
             <span className="legend account">Sink</span>
+            <span className="legend case">Case</span>
+          </div>
+          <div className="graph-controls" aria-label="Graph zoom controls">
+            <button onClick={() => zoomGraph('in')}>+</button>
+            <button onClick={() => zoomGraph('out')}>-</button>
+            <button onClick={() => zoomGraph('reset')}>Reset</button>
           </div>
         </div>
-        <div ref={graphRef} className="graph-canvas" aria-label="Interactive complex mule money laundering graph" />
-        <div className="graph-hint">Pan, zoom, and tap nodes or edges to inspect evidence from the synthetic UPI test graph.</div>
       </div>
       <div className="graph-evidence">
         <strong>{graph.networkId}: {graph.title}</strong>
         <p>{graph.investigatorNarrative}</p>
+        <div className="risk-gauge-row">
+          <div className="risk-gauge" style={riskGaugeStyle}><span>{selectedNode.riskScore}</span></div>
+          <div>
+            <span>Risk assessment</span>
+            <strong>{selectedNode.riskScore >= 85 ? 'Critical escalation' : selectedNode.riskScore >= 70 ? 'Enhanced review' : 'Monitor'}</strong>
+            <small>{selectedNode.status} / {selectedNode.type}</small>
+          </div>
+        </div>
         <div className="selected-node-card">
           <span>Selected entity</span>
           <strong>{selectedNode.label}</strong>
@@ -605,6 +819,21 @@ function MuleGraphView({ graph }: { graph: MuleGraph }) {
           {topRiskNodes.map((node) => <span key={node.id}><b>{node.riskScore}</b>{node.label}</span>)}
         </div>
         <div className="reason-list">{graph.reasonCodes.map((code) => <span className="chip" key={code}>{code}</span>)}</div>
+        <div className="relationship-list">
+          <strong>Fund flow connections</strong>
+          {selectedConnections.length ? selectedConnections.map((edge) => {
+            const isOut = edge.source === selectedNode.id;
+            const counterpartyId = isOut ? edge.target : edge.source;
+            const counterparty = graph.nodes.find((node) => node.id === counterpartyId);
+            return (
+              <button key={edge.id} onClick={() => counterparty && setSelectedNode(counterparty)}>
+                <span>{isOut ? 'OUT' : 'IN'}</span>
+                <b>{counterparty?.label ?? counterpartyId}</b>
+                <small>{formatValue('amount', edge.amount)} / {edge.velocityMinutes}m</small>
+              </button>
+            );
+          }) : <p>No direct edge selected for this entity.</p>}
+        </div>
         <div className="edge-ledger">
           {graph.edges.slice(0, 5).map((edge) => <span key={edge.id}><b>{edge.edgeType}</b>{edge.label} - {formatValue('amount', edge.amount)} - {edge.velocityMinutes}m</span>)}
         </div>
