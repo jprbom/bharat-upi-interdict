@@ -4,7 +4,7 @@ export type Role = 'ADMIN' | 'INVESTIGATOR' | 'COMPLIANCE_OFFICER' | 'BANK_PARTN
 export type Permission = 'read' | 'write' | 'admin';
 
 const roles = ["ADMIN","INVESTIGATOR","COMPLIANCE_OFFICER","BANK_PARTNER","VIEWER"] as Role[];
-const defaultRole: Role = 'INVESTIGATOR';
+const defaultRole: Role = 'VIEWER';
 const permissionsByRole: Record<Role, Permission[]> = {
   "ADMIN": [
     "read",
@@ -56,4 +56,3 @@ export function roleCatalogue() {
     permissions: permissionsByRole[role]
   }));
 }
-

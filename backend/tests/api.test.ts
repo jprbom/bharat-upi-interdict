@@ -25,6 +25,23 @@ describe('Bharat UPI Interdict API', () => {
 
   it('supports risk entity CRUD and protects destructive operations', async () => {
     const app = createApp(createTestDatabase());
+    const forgedRole = await request(app)
+      .post('/api/risk-entities')
+      .set('x-user-role', 'UNKNOWN_ADMIN')
+      .send({
+        entityType: 'VPA',
+        handle: 'forged-role@upi',
+        bank: 'SBI',
+        deviceHash: 'dev_forged_01',
+        riskScore: 31,
+        velocityScore: 21,
+        linkedEntities: 3,
+        status: 'WATCH'
+      });
+
+    expect(forgedRole.status).toBe(403);
+    expect(forgedRole.body.role).toBe('VIEWER');
+
     const created = await request(app)
       .post('/api/risk-entities')
       .set('x-user-role', 'INVESTIGATOR')
