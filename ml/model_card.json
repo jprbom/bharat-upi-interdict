@@ -1,0 +1,45 @@
+{
+  "project": "Bharat UPI Interdict",
+  "target": "mule_network_hold",
+  "features": [
+    "velocity_score",
+    "linked_entities",
+    "circularity",
+    "device_reuse",
+    "new_account_ratio"
+  ],
+  "data_policy": "Synthetic portfolio data only; no live UPI/NPCI/bank/PSP/customer data.",
+  "models": {
+    "aiml_logistic_regression": {
+      "accuracy_on_synthetic_training_set": 1.0,
+      "weights": [
+        0.5579,
+        2.3979,
+        3.8682,
+        5.1095,
+        5.6346
+      ],
+      "bias": -7.4933
+    },
+    "dl_tiny_neural_network": {
+      "accuracy_on_synthetic_training_set": 1.0,
+      "hidden_units": 4
+    }
+  },
+  "normalization": {
+    "min": [
+      33,
+      4,
+      0.08,
+      1,
+      0.1
+    ],
+    "max": [
+      94,
+      51,
+      0.91,
+      9,
+      0.71
+    ]
+  }
+}

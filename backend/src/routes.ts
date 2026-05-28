@@ -5,6 +5,7 @@ import { requirePermission } from './auth.js';
 import type { JsonDatabase } from './db.js';
 import { scoreInterdiction } from './engine.js';
 import { caseInputSchema, riskEntityInputSchema, scoreInputSchema } from './schemas.js';
+import { buildMockUpiResponse, mockUpiRailRequestSchema } from './mockUpi.js';
 
 const nonEmptyPatch = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
   schema.partial().refine((value) => Object.keys(value).length > 0, 'Patch must contain at least one field.');
@@ -109,6 +110,14 @@ export function registerRoutes(app: Express, db: JsonDatabase) {
       next(error);
     }
   });
+
+  app.post('/api/mock-upi', requirePermission('read'), (req, res, next) => {
+    try {
+      const body = mockUpiRailRequestSchema.parse(req.body);
+      res.json(buildMockUpiResponse(body));
+    } catch (error) {
+      next(error);
+    }
+  });
+
 }
-
-

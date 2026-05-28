@@ -1,67 +1,113 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AlertTriangle, Crosshair, Eye, GitFork, Lock, Network, RefreshCw, Shield, Sparkles, Trash2 } from 'lucide-react';
+import { Activity, AlertTriangle, BrainCircuit, CheckCircle2, Database, Eye, FileCheck2, Lock, Network, RefreshCw, Route, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { apiRequest } from './api';
-import { formatInr } from './lib/viewModel';
+import { formatValue, toneForRisk } from './lib/viewModel';
+import { buildMockUpiRequest, getWorkflowTab, workflowTabs, type WorkflowTab } from './lib/workflow';
 
-type Role = 'ADMIN' | 'INVESTIGATOR' | 'COMPLIANCE_OFFICER' | 'BANK_PARTNER' | 'VIEWER';
-type RiskEntity = {
-  id: string;
-  entityType: string;
-  handle: string;
-  bank: string;
-  deviceHash: string;
-  riskScore: number;
-  velocityScore: number;
-  linkedEntities: number;
-  status: string;
-  createdAt: string;
+type RecordItem = Record<string, unknown> & { id: string };
+type Metrics = { kpis: Record<string, number>; failureReasons?: Record<string, number> };
+type DomainResult = Record<string, unknown> & { reasonCodes?: string[]; explanation?: string; alternatives?: unknown[] };
+type MockUpiResult = {
+  gateway: string;
+  txnId: string;
+  rrn: string;
+  responseCode: string;
+  responseMessage: string;
+  npciStatus: string;
+  settlement: { mode: string; preSettlementHold: boolean; estimatedSettlementSeconds: number };
+  risk: { score: number; decision: string; reasonCodes: string[] };
 };
-type CaseItem = {
-  id: string;
-  networkId: string;
-  title: string;
-  amountAtRisk: number;
-  entities: number;
-  status: string;
-  recommendedAction: string;
-  createdAt: string;
-};
-type Metrics = { kpis: { highRiskEntities: number; activeCases: number; heldAmount: number; averageRiskScore: number } };
-type ScoreResult = { riskScore: number; action: string; reasonCodes: string[]; investigatorSummary: string };
 
-const roles: Role[] = ['ADMIN', 'INVESTIGATOR', 'COMPLIANCE_OFFICER', 'BANK_PARTNER', 'VIEWER'];
-const fallbackEntities: RiskEntity[] = [
-  { id: 'ent_001', entityType: 'MERCHANT', handle: 'merchant-red-772@upi', bank: 'Axis Bank', deviceHash: 'dev_8f2a91', riskScore: 94, velocityScore: 91, linkedEntities: 44, status: 'BLOCK', createdAt: '2026-05-27T09:15:00.000Z' },
-  { id: 'ent_002', entityType: 'VPA', handle: 'rahul9981@oksbi', bank: 'SBI', deviceHash: 'dev_8f2a91', riskScore: 88, velocityScore: 82, linkedEntities: 29, status: 'REVIEW', createdAt: '2026-05-27T09:18:00.000Z' },
-  { id: 'ent_003', entityType: 'DEVICE', handle: 'android-fp-29a7', bank: 'Multi-bank', deviceHash: 'dev_29a7cc', riskScore: 76, velocityScore: 68, linkedEntities: 18, status: 'WATCH', createdAt: '2026-05-27T09:21:00.000Z' }
-];
-const fallbackCases: CaseItem[] = [
-  { id: 'case_001', networkId: 'NW-MUM-4451', title: 'Circular low-ticket merchant laundering mesh', amountAtRisk: 4830000, entities: 32, status: 'HELD', recommendedAction: 'Pre-settlement debit hold and enhanced merchant KYC', createdAt: '2026-05-27T09:30:00.000Z' }
-];
-const fallbackMetrics: Metrics = { kpis: { highRiskEntities: 23, activeCases: 17, heldAmount: 4830000, averageRiskScore: 86 } };
+const CONFIG = {
+  "title": "Bharat UPI Interdict",
+  "short": "Pre-settlement mule-network interdiction and fraud investigation copilot.",
+  "roles": [
+    "ADMIN",
+    "INVESTIGATOR",
+    "COMPLIANCE_OFFICER",
+    "BANK_PARTNER",
+    "VIEWER"
+  ],
+  "defaultRole": "ADMIN",
+  "primary": {
+    "label": "Risk Entities",
+    "route": "/risk-entities",
+    "columns": [
+      "handle",
+      "entityType",
+      "status",
+      "riskScore",
+      "linkedEntities"
+    ],
+    "createPayload": {
+      "entityType": "VPA",
+      "handle": "new-mule-watch@oksbi",
+      "bank": "SBI",
+      "deviceHash": "dev_demo_77",
+      "riskScore": 86,
+      "velocityScore": 82,
+      "linkedEntities": 19,
+      "status": "REVIEW"
+    },
+    "patchPayload": {
+      "status": "BLOCK",
+      "riskScore": 91,
+      "linkedEntities": 25
+    }
+  },
+  "secondary": {
+    "label": "Interdiction Cases",
+    "route": "/interdiction-cases"
+  },
+  "domain": {
+    "label": "Mule Network Score",
+    "endpoint": "/interdiction-score",
+    "cta": "Score Mule Chain",
+    "payload": {
+      "velocityScore": 91,
+      "linkedEntities": 44,
+      "circularityScore": 0.82,
+      "deviceReuseCount": 8,
+      "newAccountRatio": 0.63,
+      "refundLoopCount": 6
+    },
+    "resultKey": "decision",
+    "riskKey": "riskScore"
+  }
+} as const;
+
+const ICONS = [Route, Activity, Database, BrainCircuit, ShieldCheck, FileCheck2, Network, Lock];
 
 export default function App() {
-  const [role, setRole] = useState<Role>('INVESTIGATOR');
-  const [entities, setEntities] = useState<RiskEntity[]>(fallbackEntities);
-  const [cases, setCases] = useState<CaseItem[]>(fallbackCases);
-  const [metrics, setMetrics] = useState<Metrics>(fallbackMetrics);
-  const [score, setScore] = useState<ScoreResult | null>(null);
-  const [error, setError] = useState('');
-  const highRisk = useMemo(() => entities.filter((entity) => entity.riskScore >= 80), [entities]);
+  const [role, setRole] = useState<string>(CONFIG.defaultRole);
+  const [activeTabId, setActiveTabId] = useState(workflowTabs[0].id);
+  const [primary, setPrimary] = useState<RecordItem[]>([]);
+  const [secondary, setSecondary] = useState<RecordItem[]>([]);
+  const [selected, setSelected] = useState<RecordItem | null>(null);
+  const [metrics, setMetrics] = useState<Metrics>({ kpis: {} });
+  const [domainResult, setDomainResult] = useState<DomainResult | null>(null);
+  const [mockResult, setMockResult] = useState<MockUpiResult | null>(null);
+  const [notice, setNotice] = useState('Ready: all CTAs use synthetic test data and mocked UPI rails.');
+  const [amount, setAmount] = useState(875);
+
+  const activeTab = getWorkflowTab(activeTabId);
+  const highRiskCount = useMemo(() => primary.filter((item) => Number(item.riskScore ?? item.impulseScore ?? 0) >= 70).length, [primary]);
+  const totalAmount = useMemo(() => primary.reduce((sum, item) => sum + Number(item.amount ?? item.monthlyInflow ?? item.amountAtRisk ?? 0), 0), [primary]);
 
   async function load() {
     try {
-      const [nextMetrics, nextEntities, nextCases] = await Promise.all([
+      const [nextMetrics, nextPrimary, nextSecondary] = await Promise.all([
         apiRequest<Metrics>('/metrics', role),
-        apiRequest<RiskEntity[]>('/risk-entities', role),
-        apiRequest<CaseItem[]>('/interdiction-cases', role)
+        apiRequest<RecordItem[]>(CONFIG.primary.route, role),
+        apiRequest<RecordItem[]>(CONFIG.secondary.route, role)
       ]);
       setMetrics(nextMetrics);
-      setEntities(nextEntities);
-      setCases(nextCases);
-      setError('');
-    } catch {
-      setError('API offline: showing synthetic graph-risk data.');
+      setPrimary(nextPrimary);
+      setSecondary(nextSecondary);
+      setSelected(nextPrimary[0] ?? null);
+      setNotice('Loaded live synthetic API data through RBAC role ' + role + '.');
+    } catch (error) {
+      setNotice('API request failed: ' + (error instanceof Error ? error.message : 'unknown error'));
     }
   }
 
@@ -69,101 +115,190 @@ export default function App() {
     void load();
   }, [role]);
 
-  async function runScore() {
-    const result = await apiRequest<ScoreResult>('/interdiction-score', role, {
-      method: 'POST',
-      body: JSON.stringify({
-        inflowVelocity: 92,
-        onwardTransferRatio: 0.83,
-        newCounterpartyRatio: 0.71,
-        deviceReuseCount: 9,
-        refundLoopCount: 4,
-        failedCollectAttempts: 8
-      })
-    });
-    setScore(result);
+  async function runDomainDecision() {
+    try {
+      const response = await apiRequest<DomainResult>(CONFIG.domain.endpoint, role, {
+        method: 'POST',
+        body: JSON.stringify(CONFIG.domain.payload)
+      });
+      setDomainResult(response);
+      setActiveTabId(workflowTabs.find((tab) => tab.apiFlow.includes(CONFIG.domain.endpoint))?.id ?? activeTabId);
+      setNotice(CONFIG.domain.label + ' completed with reason-code output.');
+    } catch (error) {
+      setNotice('Decision failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
   }
 
-  async function createEntity() {
-    const created = await apiRequest<RiskEntity>('/risk-entities', role, {
-      method: 'POST',
-      body: JSON.stringify({
-        entityType: 'VPA',
-        handle: 'watch-' + Math.floor(Math.random() * 9999) + '@upi',
-        bank: 'HDFC Bank',
-        deviceHash: 'dev_new_88',
-        riskScore: 72,
-        velocityScore: 69,
-        linkedEntities: 11,
-        status: 'WATCH'
-      })
-    });
-    setEntities([created, ...entities]);
+  async function runMockRail(tab: WorkflowTab = activeTab) {
+    try {
+      const payload = buildMockUpiRequest(tab, amount);
+      const response = await apiRequest<MockUpiResult>('/mock-upi', role, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      setMockResult(response);
+      setNotice('Mock UPI rail returned ' + response.npciStatus + ' with RRN ' + response.rrn + '.');
+    } catch (error) {
+      setNotice('Mock UPI failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
   }
 
-  async function removeEntity(id: string) {
-    await apiRequest<void>('/risk-entities/' + id, role, { method: 'DELETE' });
-    setEntities(entities.filter((entity) => entity.id !== id));
+  async function createRecord() {
+    try {
+      const created = await apiRequest<RecordItem>(CONFIG.primary.route, role, {
+        method: 'POST',
+        body: JSON.stringify(CONFIG.primary.createPayload)
+      });
+      setPrimary([created, ...primary]);
+      setSelected(created);
+      setActiveTabId(workflowTabs[2]?.id ?? activeTabId);
+      setNotice('Created test record ' + created.id + ' through ' + CONFIG.primary.route + '.');
+    } catch (error) {
+      setNotice('Create failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
+  }
+
+  async function patchSelected() {
+    const target = selected ?? primary[0];
+    if (!target) {
+      setNotice('No record available to patch.');
+      return;
+    }
+    try {
+      const updated = await apiRequest<RecordItem>(CONFIG.primary.route + '/' + target.id, role, {
+        method: 'PATCH',
+        body: JSON.stringify(CONFIG.primary.patchPayload)
+      });
+      setPrimary(primary.map((item) => item.id === updated.id ? updated : item));
+      setSelected(updated);
+      setNotice('Patched drill-down record ' + updated.id + ' with review outcome.');
+    } catch (error) {
+      setNotice('Patch failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
+  }
+
+  async function removeSelected() {
+    const target = selected ?? primary[0];
+    if (!target) {
+      setNotice('No record available to delete.');
+      return;
+    }
+    try {
+      await apiRequest<void>(CONFIG.primary.route + '/' + target.id, role, { method: 'DELETE' });
+      const nextPrimary = primary.filter((item) => item.id !== target.id);
+      setPrimary(nextPrimary);
+      setSelected(nextPrimary[0] ?? null);
+      setNotice('Deleted ' + target.id + '. Switch to non-admin roles to see RBAC denial.');
+    } catch (error) {
+      setNotice('Delete failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
+  }
+
+  function openDrillDown(tab: WorkflowTab) {
+    setActiveTabId(tab.id);
+    setSelected(primary[0] ?? null);
+    setNotice(tab.drillDown);
   }
 
   return (
-    <div className="app-shell interdict">
+    <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><img src="/logo.svg" alt="" /><span>Bharat UPI Interdict</span></div>
-        {['Command Center', 'Alerts', 'Networks', 'Entities', 'Transactions', 'Cases', 'Investigations', 'Audit Trail'].map((item, index) => (
-          <button className={index === 0 ? 'nav-item active' : 'nav-item'} key={item}><Network size={16} />{item}</button>
-        ))}
-        <div className="region-card"><span>Environment</span><strong>Production-like</strong><small>Synthetic data only</small></div>
+        <div className="brand"><img src="/logo.svg" alt="" /><span>{CONFIG.title}</span></div>
+        {workflowTabs.map((item, index) => {
+          const Icon = ICONS[index % ICONS.length];
+          return (
+            <button className={item.id === activeTabId ? 'nav-item active' : 'nav-item'} key={item.id} onClick={() => openDrillDown(item)} aria-pressed={item.id === activeTabId}>
+              <Icon size={16} />{item.label}
+            </button>
+          );
+        })}
+        <div className="region-card"><span>Sandbox</span><strong>NPCI UPI Mock</strong><small>Live synthetic endpoints</small></div>
       </aside>
       <main>
         <header className="topbar">
           <div>
-            <h1>Pre-settlement Mule Network Interdiction</h1>
-            <p>Graph-risk scoring, fraud community triage, and explainable investigation summaries.</p>
+            <h1>{CONFIG.title}</h1>
+            <p>{CONFIG.short}</p>
           </div>
           <div className="top-actions">
             <span className="live-dot">Live</span>
-            <select value={role} onChange={(event) => setRole(event.target.value as Role)}>{roles.map((item) => <option key={item}>{item}</option>)}</select>
+            <select value={role} onChange={(event) => setRole(event.target.value)} aria-label="RBAC role">{CONFIG.roles.map((item) => <option key={item}>{item}</option>)}</select>
             <button onClick={load}><RefreshCw size={16} />Refresh</button>
           </div>
         </header>
-        {error ? <div className="notice">{error}</div> : null}
+        <div className="notice">{notice}</div>
         <section className="kpi-grid">
-          <Metric title="High Risk Entities" value={String(metrics.kpis.highRiskEntities)} detail="watch, review, block" icon={<AlertTriangle />} />
-          <Metric title="Held Amount" value={formatInr(metrics.kpis.heldAmount)} detail="pre-settlement hold" icon={<Shield />} />
-          <Metric title="Active Cases" value={String(metrics.kpis.activeCases)} detail="casework queue" icon={<Eye />} />
-          <Metric title="Avg Risk Score" value={String(metrics.kpis.averageRiskScore)} detail="network weighted" icon={<Crosshair />} />
+          <Metric title={CONFIG.primary.label} value={String(primary.length)} detail="live API records" icon={<Activity />} />
+          <Metric title={CONFIG.secondary.label} value={String(secondary.length)} detail="policy/reference records" icon={<FileCheck2 />} />
+          <Metric title="Risk Watch" value={String(highRiskCount)} detail="records above review line" icon={<AlertTriangle />} />
+          <Metric title="Amount Signal" value={formatValue('amount', totalAmount)} detail="synthetic portfolio value" icon={<ShieldCheck />} />
         </section>
         <section className="workspace-grid">
           <div className="panel span-two">
-            <div className="panel-title"><GitFork size={18} /> Interdiction Copilot</div>
-            <button onClick={runScore}><Sparkles size={16} />Score Sample Network</button>
-            <button onClick={createEntity}><Lock size={16} />Create Watch Entity</button>
-            <div className="recommendation-card">
-              <div><span>Action</span><strong>{score?.action || 'Run score'}</strong></div>
-              <div><span>Risk Score</span><strong>{score?.riskScore || 0}/100</strong></div>
-              <p>{score?.investigatorSummary || 'The copilot converts graph evidence into case-ready reason codes.'}</p>
+            <div className="panel-title"><Sparkles size={18} /> {activeTab.label}</div>
+            <p>{activeTab.description}</p>
+            <div className="tab-detail">
+              <div><span>CTA</span><strong>{activeTab.cta}</strong></div>
+              <div><span>Drill-down</span><strong>{activeTab.drillDown}</strong></div>
+              <div><span>API Flow</span><strong>{activeTab.apiFlow}</strong></div>
+            </div>
+            <div className="simulator-row">
+              <label>Mock amount <input aria-label="Mock amount" type="number" value={amount} onChange={(event) => setAmount(Number(event.target.value))} /></label>
+              <button onClick={runDomainDecision}><BrainCircuit size={16} />{CONFIG.domain.cta}</button>
+              <button onClick={() => runMockRail()}><Network size={16} />Mock UPI/NPCI</button>
+              <button onClick={createRecord}><Activity size={16} />Create Test Data</button>
+              <button onClick={patchSelected}><CheckCircle2 size={16} />Mark Reviewed</button>
+              <button onClick={removeSelected}><Trash2 size={16} />Delete Selected</button>
             </div>
           </div>
           <div className="panel">
-            <div className="panel-title"><Network size={18} /> Network Spotlight</div>
-            {highRisk.map((entity) => <div className="node-row" key={entity.id}><strong>{entity.riskScore}</strong><span>{entity.handle}</span><small>{entity.linkedEntities} links</small></div>)}
+            <div className="panel-title"><Lock size={18} /> Decision Output</div>
+            <div className="recommendation-card">
+              <div><span>{CONFIG.domain.resultKey}</span><strong>{String(domainResult?.[CONFIG.domain.resultKey] ?? 'Run model')}</strong></div>
+              <div><span>{CONFIG.domain.riskKey}</span><strong>{formatValue(CONFIG.domain.riskKey, domainResult?.[CONFIG.domain.riskKey] ?? 0)}</strong></div>
+              <p>{String(domainResult?.explanation ?? 'Use the model CTA to generate explainable reason codes from the domain engine.')}</p>
+            </div>
+            <div className="reason-list">
+              {(domainResult?.reasonCodes ?? ['READY_FOR_TEST_DATA', 'RBAC_ENABLED', 'MOCK_UPI_READY']).map((code) => <span className="chip" key={code}>{code}</span>)}
+            </div>
+          </div>
+          <div className="panel span-two">
+            <div className="panel-title"><Network size={18} /> Mock NPCI/UPI Response</div>
+            {mockResult ? (
+              <div className="mock-card">
+                <strong>{mockResult.npciStatus} / {mockResult.responseCode}</strong>
+                <span>RRN: {mockResult.rrn}</span>
+                <span>Txn: {mockResult.txnId}</span>
+                <span>Hold: {mockResult.settlement.preSettlementHold ? 'Yes' : 'No'}</span>
+                <p>{mockResult.responseMessage}</p>
+                <div className="reason-list">{mockResult.risk.reasonCodes.map((code) => <span className="chip" key={code}>{code}</span>)}</div>
+              </div>
+            ) : <p>Run Mock UPI/NPCI to see a sandbox response with RRN, bank reference, response code, webhook status, and settlement behavior.</p>}
+          </div>
+          <div className="panel">
+            <div className="panel-title"><Eye size={18} /> Drill-down</div>
+            {selected ? <DetailCard item={selected} /> : <p>Select or create a record to open a drill-down.</p>}
           </div>
           <div className="panel span-three">
-            <div className="panel-title"><Lock size={18} /> Risk Entities CRUD</div>
+            <div className="panel-title"><Database size={18} /> {CONFIG.primary.label} End-to-End CRUD</div>
             <div className="table">
-              <div className="table-row header"><span>Handle</span><span>Type</span><span>Bank</span><span>Risk</span><span>Status</span><span>Action</span></div>
-              {entities.map((entity) => (
-                <div className="table-row" key={entity.id}>
-                  <span>{entity.handle}</span><span>{entity.entityType}</span><span>{entity.bank}</span><span>{entity.riskScore}</span><span className={'status ' + entity.status.toLowerCase()}>{entity.status}</span>
-                  <span><button className="icon-button" onClick={() => void removeEntity(entity.id)}><Trash2 size={15} /></button></span>
-                </div>
-              ))}
+              <div className="table-row header">{CONFIG.primary.columns.map((column) => <span key={column}>{column}</span>)}<span>Action</span></div>
+              {primary.map((item) => {
+                const risk = Number(item.riskScore ?? item.impulseScore ?? 0);
+                return (
+                  <button className="table-row table-button" key={item.id} onClick={() => setSelected(item)}>
+                    {CONFIG.primary.columns.map((column) => <span className={/risk|impulse|score/i.test(column) ? 'status ' + toneForRisk(risk) : ''} key={column}>{formatValue(column, item[column])}</span>)}
+                    <span><Eye size={15} /> Open</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div className="panel span-three">
-            <div className="panel-title"><Shield size={18} /> Casework Queue</div>
-            {cases.map((item) => <div className="case-card" key={item.id}><strong>{item.title}</strong><span>{item.networkId} - {item.entities} entities - {formatInr(item.amountAtRisk)}</span><p>{item.recommendedAction}</p></div>)}
+            <div className="panel-title"><FileCheck2 size={18} /> {CONFIG.secondary.label}</div>
+            <div className="secondary-grid">
+              {secondary.map((item) => <DetailCard item={item} key={item.id} />)}
+            </div>
           </div>
         </section>
       </main>
@@ -171,7 +306,10 @@ export default function App() {
   );
 }
 
+function DetailCard({ item }: { item: RecordItem }) {
+  return <div className="case-card">{Object.entries(item).filter(([key]) => !['id', 'createdAt'].includes(key)).slice(0, 6).map(([key, value]) => <p key={key}><strong>{key}</strong>: {formatValue(key, value)}</p>)}</div>;
+}
+
 function Metric({ title, value, detail, icon }: { title: string; value: string; detail: string; icon: ReactNode }) {
   return <div className="metric-card"><div>{icon}</div><span>{title}</span><strong>{value}</strong><small>{detail}</small></div>;
 }
-
