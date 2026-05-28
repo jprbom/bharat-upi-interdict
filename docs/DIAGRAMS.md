@@ -8,6 +8,21 @@
   <img src="assets/system-map.svg" width="100%" alt="Bharat UPI Interdict system map">
 </p>
 
+## Latest Enhancement Map
+
+~~~mermaid
+flowchart LR
+  UI["Mule Graph + Timeline CTA"] --> AUTH["Signed Demo Token"]
+  AUTH --> API["Express API"]
+  API --> GRAPH["Mule Graph Evidence"]
+  API --> SIM["Payment Ecosystem Simulator"]
+  GRAPH --> HOLD["Pre-settlement Hold Recommendation"]
+  SIM --> NPCI["NPCI-style UPI Rail"]
+  NPCI --> WH["Risk Hold Webhook"]
+  WH --> CASE["Investigator Case Workspace"]
+  CASE --> UI
+~~~
+
 ## Product Decision Flow
 
 ~~~mermaid
@@ -37,12 +52,26 @@ sequenceDiagram
   participant Mock as Mock NPCI/UPI Rail
   participant DB as JSON Test DB
   User->>UI: Click tab, CTA, or row drill-down
-  UI->>API: Request with x-user-role
+  UI->>API: Request with signed demo bearer token
   API->>DB: Read/write synthetic records
   API->>Model: Score domain-specific risk or recommendation
   API->>Mock: Generate UPI-like response code, RRN, callback
   Mock-->>API: Sandbox response, no real money movement
   API-->>UI: Render decision, reason codes, and drill-down
+~~~
+
+## Mule Interdiction Lifecycle
+
+~~~mermaid
+stateDiagram-v2
+  [*] --> PAYMENT_ATTEMPT_CREATED
+  PAYMENT_ATTEMPT_CREATED --> GRAPH_RISK_SCORED
+  GRAPH_RISK_SCORED --> PRE_SETTLEMENT_HOLD
+  PRE_SETTLEMENT_HOLD --> NPCI_STYLE_RAIL_STATUS
+  NPCI_STYLE_RAIL_STATUS --> RISK_WEBHOOK_SENT
+  RISK_WEBHOOK_SENT --> INVESTIGATOR_REVIEW
+  INVESTIGATOR_REVIEW --> HOLD_CONFIRMED
+  INVESTIGATOR_REVIEW --> RELEASE_TO_SETTLEMENT
 ~~~
 
 ## Deployment and SDLC View

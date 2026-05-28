@@ -13,9 +13,8 @@ Build a private GitHub-ready full-stack portfolio project for Bharat UPI Interdi
 
 ## Architecture
 
-The frontend calls the Express API through the Vite dev proxy. The API enforces role permissions from the x-user-role header, validates input with Zod, persists data to a JSON database, and computes domain recommendations through a pure TypeScript engine module.
+The frontend calls the Express API through the Vite dev proxy. The API obtains a signed local demo bearer token, enforces role permissions backend-side, validates input with Zod, persists synthetic data to a JSON database, computes domain recommendations through a pure TypeScript engine module, and can run the five-adapter payment ecosystem simulator plus mule graph evidence workspace.
 
 ## SDLC Loop
 
 Plan, implement, test, security scan, document, commit, publish private GitHub repo.
-

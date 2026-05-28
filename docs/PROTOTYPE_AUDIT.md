@@ -1,5 +1,9 @@
 # Prototype Audit Response
 
+## Latest Audit Closure
+
+The latest implementation adds signed demo-token RBAC, a five-adapter payment ecosystem simulator, HMAC webhook signing, duplicate and out-of-order webhook handling, refund/dispute/reconciliation APIs, a frontend Payment Ecosystem Timeline, a richer mule graph investigation UI, 10,000-row synthetic AIML/DL artifacts, and expanded enterprise documentation.
+
 ## Honest Status
 
 Bharat UPI Interdict is a runnable portfolio-grade prototype, not a production fraud-interdiction system. It demonstrates a mule-risk investigation workspace, synthetic CRUD workflows, RBAC simulation, a mocked UPI/NPCI response, tests, CI, Docker packaging, and SDLC documentation.
@@ -20,11 +24,11 @@ It should not be presented as: **a real graph neural network, bank-grade mule de
 
 ## Prototype Boundaries
 
-- RBAC is a simulator. It uses `x-user-role`; production would require OIDC/JWT, signed sessions, tenant isolation, KMS-backed secrets, and immutable audit logs.
-- Current mule logic is weighted scoring, not graph traversal, entity resolution, connected components, PageRank, community detection, or GNN inference.
-- The ML script is educational and synthetic, not statistically valid fraud-model training.
+- RBAC remains a simulator, but it now uses signed local demo bearer tokens and ignores forged `x-user-role`; production would still require OIDC/JWT, signed sessions, tenant isolation, KMS-backed secrets, and immutable audit logs.
+- Current mule logic now includes an interactive synthetic graph workspace and reason-code evidence. It is still not real entity resolution, PageRank, community detection, or GNN inference.
+- The ML script now generates 10,000 synthetic rows with train/test metrics, confusion matrix, model card, and feature importance. It remains synthetic and not statistically valid production fraud-model training.
 - Persistence is JSON file storage, not a graph database, event store, case ledger, or immutable evidence chain.
-- The UPI rail is fully mocked and does not connect to NPCI, PSPs, banks, law-enforcement workflows, or real fraud hold systems.
+- The payment ecosystem simulator is fully mocked and does not connect to NPCI, PSPs, banks, law-enforcement workflows, or real fraud hold systems.
 
 ## Serious Upgrade Path
 
@@ -33,4 +37,3 @@ It should not be presented as: **a real graph neural network, bank-grade mule de
 - Implement connected components, circularity, burst velocity, betweenness, degree, and community-risk propagation.
 - Add case workspace with investigator notes, hold reason, evidence timeline, and SAR-style export.
 - Add graph fixtures and scenario tests for mule chains, circular money movement, and merchant laundering.
-
