@@ -1,14 +1,17 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
+import { signDemoToken, type Role } from '../src/auth.js';
 import { createTestDatabase } from '../src/db.js';
+
+const bearer = (role: Role) => 'Bearer ' + signDemoToken(role);
 
 describe('Bharat UPI Interdict API', () => {
   it('scores a high-risk mule network for pre-settlement hold', async () => {
     const app = createApp(createTestDatabase());
     const response = await request(app)
       .post('/api/interdiction-score')
-      .set('x-user-role', 'INVESTIGATOR')
+      .set('Authorization', bearer('INVESTIGATOR'))
       .send({
         inflowVelocity: 92,
         onwardTransferRatio: 0.83,
@@ -27,7 +30,7 @@ describe('Bharat UPI Interdict API', () => {
     const app = createApp(createTestDatabase());
     const response = await request(app)
       .get('/api/mule-graph')
-      .set('x-user-role', 'INVESTIGATOR');
+      .set('Authorization', bearer('INVESTIGATOR'));
 
     expect(response.status).toBe(200);
     expect(response.body.nodes.length).toBeGreaterThanOrEqual(7);
@@ -58,7 +61,7 @@ describe('Bharat UPI Interdict API', () => {
 
     const created = await request(app)
       .post('/api/risk-entities')
-      .set('x-user-role', 'INVESTIGATOR')
+      .set('Authorization', bearer('INVESTIGATOR'))
       .send({
         entityType: 'VPA',
         handle: 'new-watch@upi',
@@ -74,12 +77,12 @@ describe('Bharat UPI Interdict API', () => {
 
     const denied = await request(app)
       .delete('/api/risk-entities/' + created.body.id)
-      .set('x-user-role', 'INVESTIGATOR');
+      .set('Authorization', bearer('INVESTIGATOR'));
     expect(denied.status).toBe(403);
 
     const deleted = await request(app)
       .delete('/api/risk-entities/' + created.body.id)
-      .set('x-user-role', 'ADMIN');
+      .set('Authorization', bearer('ADMIN'));
     expect(deleted.status).toBe(204);
   });
 
@@ -87,7 +90,7 @@ describe('Bharat UPI Interdict API', () => {
     const app = createApp(createTestDatabase());
     const response = await request(app)
       .post('/api/mock-upi')
-      .set('x-user-role', 'OPS_MANAGER')
+      .set('Authorization', bearer('INVESTIGATOR'))
       .send({
         txnId: 'TXN-DEMO-001',
         payerVpa: 'payer@oksbi',
