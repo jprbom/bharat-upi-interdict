@@ -64,14 +64,14 @@ const CONFIG = {
     "endpoint": "/interdiction-score",
     "cta": "Score Mule Chain",
     "payload": {
-      "velocityScore": 91,
-      "linkedEntities": 44,
-      "circularityScore": 0.82,
+      "inflowVelocity": 91,
+      "onwardTransferRatio": 0.82,
+      "newCounterpartyRatio": 0.63,
       "deviceReuseCount": 8,
-      "newAccountRatio": 0.63,
-      "refundLoopCount": 6
+      "refundLoopCount": 6,
+      "failedCollectAttempts": 5
     },
-    "resultKey": "decision",
+    "resultKey": "action",
     "riskKey": "riskScore"
   }
 } as const;
