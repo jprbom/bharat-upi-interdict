@@ -1,186 +1,90 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" width="100%" alt="Bharat UPI Interdict rich animated hero infographic">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=240&color=gradient&text=Bharat%20UPI%20Interdict&fontAlign=50&fontAlignY=38&fontSize=44&fontColor=ffffff&desc=Pre-settlement%20mule-network%20interdiction%20and%20fraud%20investigation%20copilot&descAlign=50&descAlignY=60&descSize=15&animation=fadeIn" width="100%" alt="Bharat UPI Interdict animated hero banner"/>
 </p>
 
 <p align="center">
-  <img src="frontend/public/logo.svg" width="92" alt="Bharat UPI Interdict animated logo">
-</p>
-
-<h1 align="center">Bharat UPI Interdict</h1>
-
-<p align="center"><strong>Pre-settlement mule-network interdiction and fraud investigation copilot.</strong></p>
-
-<p align="center">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=for-the-badge&logo=typescript&logoColor=white">
-  <img alt="React" src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white">
-  <img alt="Express" src="https://img.shields.io/badge/Express-5-111827?style=for-the-badge&logo=express&logoColor=white">
-  <img alt="Mock UPI" src="https://img.shields.io/badge/NPCI%20UPI-Mocked%20Sandbox-ef4444?style=for-the-badge">
-  <img alt="Security" src="https://img.shields.io/badge/Audit-0%20High%20Vulns-16a34a?style=for-the-badge&logo=securityscorecard&logoColor=white">
-  <img alt="License" src="https://img.shields.io/badge/License-Proprietary%20All%20Rights%20Reserved-991b1b?style=for-the-badge">
+  <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=700&size=22&duration=2600&pause=900&center=true&vCenter=true&width=900&lines=Investor+Showcase+%7C+No+Proprietary+Source+Code;UPI+Fraud+Graph+Intelligence+%7C+Mule+Risk+Copilot;Explainable+Interdiction+for+India-scale+Payments" alt="animated project narrative"/>
 </p>
 
 <p align="center">
-  <a href="#concept">Concept</a> &middot;
-  <a href="#working-demo">Working Demo</a> &middot;
-  <a href="#bfsi--fintech-benefit">BFSI Benefit</a> &middot;
-  <a href="#aiml--dl-layer">AIML/DL</a> &middot;
-  <a href="#run-locally">Run Locally</a>
+  <img src="https://img.shields.io/badge/Showcase-Concept%20Repository-0f172a?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Domain-UPI%20Fraud%20%7C%20Risk%20%7C%20Interdiction-ef4444?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Code-Not%20Exposed-991b1b?style=for-the-badge">
 </p>
 
-## Concept
+# Bharat UPI Interdict
 
-Bharat UPI Interdict is a full-stack UPI-native AI infrastructure prototype. It combines a React RBAC command center, secure Express APIs, CRUD data operations, concept-specific decisioning, and a mocked NPCI/UPI rail response layer. The repo is designed for portfolio demonstration and SDLC review, not live payment processing.
+**Pre-settlement mule-network interdiction and fraud investigation copilot.**
 
-The system uses synthetic data to show how a BFSI or fintech product team could operate pre-settlement mule-network interdiction and fraud investigation copilot. without touching real customer, bank, PSP, NPCI, or UPI rail data.
+This repository is a public concept showcase. It explains the product thesis, investigation model, AI/ML role, ecosystem impact and investor narrative. It does not expose proprietary source code, fraud rules, graph models, scoring weights, credentials, datasets, prompts or production integrations.
 
-## Prototype Positioning
+---
 
-This repo is intentionally positioned as a **runnable synthetic prototype**, not a production fintech system. The frontend, APIs, CRUD, RBAC workflow, mock UPI response, tests, Docker files, and documentation are real. The payment rail, security authority, persistence, and AIML/DL models are controlled demo layers.
+## Why this matters
 
-Use the phrasing: "UPI-native AI product prototype with SDLC packaging." Avoid the phrasing: "production-ready UPI fraud interdiction platform."
+UPI fraud is increasingly networked. Mule accounts, layered beneficiaries, fast cash-out, merchant camouflage and device/account reuse can defeat isolated transaction checks. By the time a manual review starts, value may already move across multiple hops.
 
-## Latest Enhancements
+The gap is not just fraud detection. The gap is **early interdiction with explainable investigator workflow**.
 
-This release closes the latest audit loop with practical, testable upgrades:
+## Product thesis
 
-| Area | Enhancement |
-| --- | --- |
-| Payment lifecycle | Added a five-adapter payment ecosystem simulator: PG, PA, TPAP, PSP/bank, and NPCI-style UPI rail. |
-| Webhooks | Added HMAC webhook signatures, duplicate-event idempotency, out-of-order delivery handling, and terminal-state governance. |
-| Security | Replaced raw role headers with signed local demo bearer tokens from `/api/auth/demo-token`; forged `x-user-role` is ignored. |
-| Frontend | Added a **Payment Ecosystem Timeline** CTA and visual lifecycle panel alongside the mule graph workspace. |
-| Graph intelligence | Mule graph drill-down now renders risk entities, hot paths, linked devices, edge ledger, graph filters, zoom controls, and pre-settlement hold evidence. |
-| AIML/DL | Upgraded `ml/train_model.py` to generate 10,000 synthetic rows, train/test split, metrics, confusion matrix, model card, and feature importance. |
-| Documentation | Added API contract, data model, threat model, observability, model governance, deployment, enterprise architecture, and investor due-diligence docs. |
-| Validation | `npm run verify` and browser E2E smoke tests pass locally with mule graph and payment ecosystem coverage. |
+Bharat UPI Interdict maps suspicious UPI-like payment flows into an entity graph, clusters mule-network signals, ranks interdiction priority, simulates hold/review decisions and generates explainable reason codes for fraud teams.
 
-## Working Demo
+---
 
-The frontend now has working tabs, CTAs, row drill-downs, create/patch/delete CRUD actions, domain-specific AI decision calls, and a mock UPI/NPCI request-response flow.
+## Concept flow
 
-| Flow | What works |
-| --- | --- |
-| RBAC | Role selector requests a signed local demo bearer token. Forged `x-user-role` headers are ignored. |
-| Tabs | Every sidebar tab changes active content and drill-down context. |
-| CRUD | The primary workspace can create, patch, inspect, and delete synthetic records. |
-| AI decision | `/interdiction-score` returns explainable reason codes. |
-| Mule graph | `/mule-graph` renders a complex synthetic laundering mesh with VPA, device, merchant, bank-account, victim, and case nodes. |
-| Mock UPI | `/api/mock-upi` returns RRN, UPI request id, bank reference, response code, settlement state, and webhook metadata. |
-| Payment ecosystem | `/api/payments/initiate` simulates PG, PA, TPAP, PSP/bank, NPCI-style rail, webhook, refund, dispute, and settlement lifecycle. |
-
-## Payment Ecosystem Simulator
-
-This repository does not use live NPCI, bank, PSP, TPAP, payment aggregator, or payment gateway APIs. It implements a public-safe simulator for product architecture, AI decisioning, fraud/risk workflows, and enterprise SDLC demonstration.
-
-The simulator includes five adapters: NPCI-style UPI rail, TPAP, PSP/bank, payment aggregator, and payment gateway. It also includes HMAC webhook signatures, duplicate-event idempotency, out-of-order webhook handling, settlement batches, disputes, refunds, and a frontend **Payment Ecosystem Timeline** panel.
-
-See [`docs/PAYMENT_ECOSYSTEM_SIMULATOR.md`](docs/PAYMENT_ECOSYSTEM_SIMULATOR.md).
-
-## BFSI / Fintech Benefit
-
-Banks, PSPs, payment aggregators, and fraud operations can use this architecture to identify mule clusters before settlement, reduce investigation time, and produce explainable hold decisions for compliance teams.
-
-This project is useful for senior payment, fintech, digital banking, risk, platform, and AI product portfolios because it shows the full product chain: business concept, test data, secure APIs, RBAC, frontend workflows, explainability, model training, CI, documentation, and deployment thinking.
-
-## Architecture
-
-<p align="center">
-  <img src="docs/assets/system-map.svg" width="100%" alt="Bharat UPI Interdict architecture system map">
-</p>
-
-~~~mermaid
+```mermaid
 flowchart LR
-  UI["React RBAC Command Center"] --> AUTH["Signed Demo Token"]
-  AUTH --> API["Express API"]
-  API --> RBAC["RBAC + Zod + Helmet + Rate Limit"]
-  API --> CRUD["Synthetic CRUD Store"]
-  API --> AI["Mule Risk Engine + Graph Evidence"]
-  API --> GRAPH["Complex Mule Graph"]
-  API --> SIM["Payment Ecosystem Simulator"]
-  SIM --> RAIL["NPCI-style UPI Rail"]
-  RAIL --> HOLD["Pre-settlement Hold / Case Review"]
-  HOLD --> UI
-  GRAPH --> UI
-  AI --> UI
-~~~
-
-## AIML / DL Layer
-
-The repository includes working Python code in `ml/train_model.py`.
-
-It trains:
-
-- an explainable logistic-regression AIML baseline
-- a compact one-hidden-layer neural-network model as the DL demonstration
-- 10,000 synthetic rows with train/test split
-- holdout metrics, confusion matrix, feature importance, and model-card artifacts at `ml/model_card.json`, `ml/metrics.json`, and `ml/feature_importance.json`
-
-Run:
-
-```bash
-python ml/train_model.py
+  A[Payment event stream] --> B[Entity resolution]
+  B --> C[Account / device / merchant graph]
+  C --> D[Mule-pattern scoring]
+  D --> E[Reason-code generation]
+  E --> F[Hold / review simulation]
+  F --> G[Investigator cockpit]
 ```
 
-Features used for this concept include `amount_paise`, `bank_success_rate`, `collect_decline_rate`, `risk_score`, `latency_ms`, `device_trust_score`, `merchant_trust_score`, and `retry_count`, with the app layer adding mule-specific graph features such as linked entities, circularity, device reuse, and hot path velocity.
+## Investor-grade capability map
 
-## Mock UPI / NPCI API
+| Layer | Capability | Value |
+|---|---|---|
+| Market | UPI fraud and mule-network intelligence | Addresses a real ecosystem pain point |
+| Product | Investigator cockpit and review simulation | Converts risk signal into action workflow |
+| AI/ML | Graph clustering and anomaly patterns | Improves prioritisation and detection depth |
+| Platform | Event-driven risk API model | Can integrate with bank/PSP risk operations |
+| Governance | Explainable reason codes and audit trail | Supports controlled, accountable decisions |
 
-Example request:
+---
 
-```json
-{
-  "txnId": "TXN-DEMO-001",
-  "payerVpa": "payer@oksbi",
-  "payeeVpa": "merchant@upi",
-  "amount": 499,
-  "flow": "UPI_INTENT",
-  "purpose": "portfolio test flow",
-  "riskScore": 24,
-  "scenario": "HAPPY_PATH"
-}
-```
+## What visitors should understand in 60 seconds
 
-The response is intentionally NPCI-like for demos, but fully synthetic:
+- Mule risk is a network problem, not only a transaction problem.
+- Interdiction requires explainability, not just a black-box score.
+- Synthetic/sandbox events can validate the product without touching regulated rails.
+- The defensible layer is graph intelligence, risk reasoning, alert prioritisation and investigator UX.
+- Proprietary models, rules and data structures are intentionally not public.
 
-- `gateway: NPCI_UPI_MOCK`
-- `rrn`, `upiRequestId`, `bankRefId`
-- `npciStatus`, `responseCode`, `responseMessage`
-- settlement and pre-settlement hold metadata
-- risk decision and reason codes
-- synthetic PSP/bank webhook callback state
+## Success metrics
 
-## Run Locally
+| Metric | Why it matters |
+|---|---|
+| Mule cluster detection precision | Risk-model credibility |
+| False-positive control | Operational viability |
+| Investigation turnaround time | Fraud-ops productivity |
+| Fraud value at risk identified | Commercial and ecosystem value |
 
-```bash
-npm install
-npm run verify
-npm --workspace backend run start
-npm --workspace frontend run preview
-python ml/train_model.py
-```
+## Validation scenarios
 
-Frontend: `http://127.0.0.1:5102`
+- Circular mule flows
+- Burst credit and fast cash-out
+- Beneficiary fan-out
+- Device reuse across accounts
+- Merchant camouflage
+- Layered transfers across weak accounts
 
-Backend health: `http://127.0.0.1:4102/api/health`
+## Positioning
 
-## Documentation
+Bharat UPI Interdict sits at the intersection of UPI risk, graph intelligence, fraud operations and explainable AI for financial crime investigation.
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [API](docs/API.md)
-- [Diagrams](docs/DIAGRAMS.md)
-- [Security](docs/SECURITY.md)
-- [SDLC](docs/SDLC.md)
-- [Testing](docs/TESTING.md)
-- [Prototype Audit Response](docs/PROTOTYPE_AUDIT.md)
-
-## License and Proprietary Rights
-
-This repository is **public for portfolio review only**. It is **not open source**.
-
-Copyright (c) 2026 Prashant Jagtap. All Rights Reserved.
-
-No one may use, copy, modify, distribute, deploy, commercialize, train on, or create derivative works from this code, documentation, diagrams, synthetic data, logos, UI designs, concepts, or repository materials without prior written permission from Prashant Jagtap.
-
-See [LICENSE](LICENSE) and [NOTICE](NOTICE.md). Permission requests: <jprbom@gmail.com>.
-
-**Author:** Prashant Jagtap <jprbom@gmail.com>
+**Owner:** [Prashant Jagtap](https://github.com/jprbom)  
+**Repository type:** Public showcase, proprietary concept
