@@ -7,6 +7,16 @@ import { buildMockUpiRequest, getWorkflowTab, workflowTabs, type WorkflowTab } f
 type RecordItem = Record<string, unknown> & { id: string };
 type Metrics = { kpis: Record<string, number>; failureReasons?: Record<string, number> };
 type DomainResult = Record<string, unknown> & { reasonCodes?: string[]; explanation?: string; alternatives?: unknown[] };
+type MuleGraph = {
+  networkId: string;
+  title: string;
+  nodes: Array<{ id: string; label: string; type: string; riskScore: number; status: string; amountAtRisk: number; x: number; y: number }>;
+  edges: Array<{ id: string; source: string; target: string; label: string; edgeType: string; amount: number; velocityMinutes: number; riskWeight: number }>;
+  metrics: Record<string, number>;
+  reasonCodes: string[];
+  killSwitchRecommendation: string;
+  investigatorNarrative: string;
+};
 type MockUpiResult = {
   gateway: string;
   txnId: string;
@@ -86,6 +96,7 @@ export default function App() {
   const [selected, setSelected] = useState<RecordItem | null>(null);
   const [metrics, setMetrics] = useState<Metrics>({ kpis: {} });
   const [domainResult, setDomainResult] = useState<DomainResult | null>(null);
+  const [muleGraph, setMuleGraph] = useState<MuleGraph | null>(null);
   const [mockResult, setMockResult] = useState<MockUpiResult | null>(null);
   const [notice, setNotice] = useState('Ready: all CTAs use synthetic test data and mocked UPI rails.');
   const [amount, setAmount] = useState(875);
@@ -127,6 +138,39 @@ export default function App() {
     } catch (error) {
       setNotice('Decision failed: ' + (error instanceof Error ? error.message : 'unknown error'));
     }
+  }
+
+  async function loadMuleGraph() {
+    try {
+      const response = await apiRequest<MuleGraph>('/mule-graph', role);
+      setMuleGraph(response);
+      setActiveTabId('graph');
+      setNotice('Loaded complex mule graph ' + response.networkId + ' with ' + response.edges.length + ' risk edges from synthetic test data.');
+    } catch (error) {
+      setNotice('Mule graph failed: ' + (error instanceof Error ? error.message : 'unknown error'));
+    }
+  }
+
+  async function runActiveTabCta() {
+    if (activeTab.id === 'overview' || activeTab.id === 'graph') {
+      await loadMuleGraph();
+      await runDomainDecision();
+      return;
+    }
+    if (activeTab.id === 'entities') {
+      await createRecord();
+      return;
+    }
+    if (activeTab.id === 'cases') {
+      setSelected(secondary[0] ?? null);
+      setNotice('Opened interdiction case evidence from live synthetic test data.');
+      return;
+    }
+    if (activeTab.id === 'recovery') {
+      await runMockRail(activeTab);
+      return;
+    }
+    await runDomainDecision();
   }
 
   async function runMockRail(tab: WorkflowTab = activeTab) {
@@ -244,7 +288,8 @@ export default function App() {
             </div>
             <div className="simulator-row">
               <label>Mock amount <input aria-label="Mock amount" type="number" value={amount} onChange={(event) => setAmount(Number(event.target.value))} /></label>
-              <button onClick={runDomainDecision}><BrainCircuit size={16} />{CONFIG.domain.cta}</button>
+              <button onClick={runActiveTabCta}><BrainCircuit size={16} />{activeTab.cta}</button>
+              <button onClick={runDomainDecision}><ShieldCheck size={16} />{CONFIG.domain.cta}</button>
               <button onClick={() => runMockRail()}><Network size={16} />Mock UPI/NPCI</button>
               <button onClick={createRecord}><Activity size={16} />Create Test Data</button>
               <button onClick={patchSelected}><CheckCircle2 size={16} />Mark Reviewed</button>
@@ -274,6 +319,10 @@ export default function App() {
                 <div className="reason-list">{mockResult.risk.reasonCodes.map((code) => <span className="chip" key={code}>{code}</span>)}</div>
               </div>
             ) : <p>Run Mock UPI/NPCI to see a sandbox response with RRN, bank reference, response code, webhook status, and settlement behavior.</p>}
+          </div>
+          <div className="panel span-three">
+            <div className="panel-title"><Network size={18} /> Complex Mule Graph From Test Data</div>
+            {muleGraph ? <MuleGraphView graph={muleGraph} /> : <p>Click Open Mule Graph or Run Graph Score to render the synthetic laundering mesh with VPA, device, merchant, bank-account, victim, and case nodes.</p>}
           </div>
           <div className="panel">
             <div className="panel-title"><Eye size={18} /> Drill-down</div>
@@ -308,6 +357,53 @@ export default function App() {
 
 function DetailCard({ item }: { item: RecordItem }) {
   return <div className="case-card">{Object.entries(item).filter(([key]) => !['id', 'createdAt'].includes(key)).slice(0, 6).map(([key, value]) => <p key={key}><strong>{key}</strong>: {formatValue(key, value)}</p>)}</div>;
+}
+
+function MuleGraphView({ graph }: { graph: MuleGraph }) {
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const shortLabel = (value: string) => value.length > 18 ? value.slice(0, 16) + '..' : value;
+  return (
+    <div className="mule-graph-layout">
+      <div className="graph-canvas" aria-label="Complex mule money laundering graph">
+        <svg viewBox="0 0 100 86" role="img">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" />
+            </marker>
+          </defs>
+          {graph.edges.map((edge) => {
+            const source = nodeById.get(edge.source);
+            const target = nodeById.get(edge.target);
+            if (!source || !target) return null;
+            return (
+              <g key={edge.id}>
+                <line x1={source.x} y1={source.y} x2={target.x} y2={target.y} className={'graph-edge ' + edge.edgeType.toLowerCase()} markerEnd="url(#arrow)" />
+              </g>
+            );
+          })}
+          {graph.nodes.map((node) => (
+            <g key={node.id} className={'graph-node ' + node.type.toLowerCase()} transform={'translate(' + node.x + ' ' + node.y + ')'}>
+              <circle r={node.riskScore >= 85 ? 5.8 : 4.8} />
+              <text y="-7">{shortLabel(node.label)}</text>
+              <text y="9" className="node-meta">{node.type} / {node.status}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <div className="graph-evidence">
+        <strong>{graph.networkId}: {graph.title}</strong>
+        <p>{graph.investigatorNarrative}</p>
+        <div className="graph-metrics">
+          {Object.entries(graph.metrics).map(([key, value]) => <span key={key}><b>{formatValue(key, value)}</b>{key}</span>)}
+        </div>
+        <div className="reason-list">{graph.reasonCodes.map((code) => <span className="chip" key={code}>{code}</span>)}</div>
+        <div className="edge-ledger">
+          {graph.edges.slice(0, 5).map((edge) => <span key={edge.id}><b>{edge.edgeType}</b>{edge.label} · {formatValue('amount', edge.amount)} · {edge.velocityMinutes}m</span>)}
+        </div>
+        <div className="kill-switch"><strong>Kill-switch</strong><p>{graph.killSwitchRecommendation}</p></div>
+      </div>
+    </div>
+  );
 }
 
 function Metric({ title, value, detail, icon }: { title: string; value: string; detail: string; icon: ReactNode }) {

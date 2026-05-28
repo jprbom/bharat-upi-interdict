@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requirePermission } from './auth.js';
 import type { JsonDatabase } from './db.js';
 import { scoreInterdiction } from './engine.js';
+import { buildMuleGraph } from './muleGraph.js';
 import { caseInputSchema, riskEntityInputSchema, scoreInputSchema } from './schemas.js';
 import { buildMockUpiResponse, mockUpiRailRequestSchema } from './mockUpi.js';
 
@@ -62,6 +63,18 @@ export function registerRoutes(app: Express, db: JsonDatabase) {
     try {
       await db.delete('riskEntities', String(req.params.id));
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/mule-graph', requirePermission('read'), async (_req, res, next) => {
+    try {
+      const [entities, cases] = await Promise.all([
+        db.list<any>('riskEntities'),
+        db.list<any>('interdictionCases')
+      ]);
+      res.json(buildMuleGraph(entities, cases));
     } catch (error) {
       next(error);
     }

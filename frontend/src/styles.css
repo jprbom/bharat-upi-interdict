@@ -232,6 +232,107 @@ input { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; pad
 .secondary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mock-card { display: grid; gap: 6px; }
 .mock-card p { margin-top: 4px; }
+.mule-graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 14px;
+  align-items: stretch;
+}
+.graph-canvas {
+  min-height: 420px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 38%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in srgb, var(--line) 38%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 28% 36%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 22rem),
+    color-mix(in srgb, var(--surface) 92%, #020617);
+  background-size: 28px 28px, 28px 28px, auto, auto;
+}
+.graph-canvas svg {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  display: block;
+}
+.graph-edge {
+  stroke: color-mix(in srgb, var(--accent) 72%, #facc15);
+  stroke-width: 0.85;
+  opacity: 0.88;
+}
+.graph-edge.device_reuse { stroke: #22d3ee; stroke-dasharray: 2 1.6; }
+.graph-edge.refund_loop { stroke: #f97316; stroke-width: 1.2; }
+.graph-edge.case_link { stroke: #a78bfa; stroke-dasharray: 2.4 1.5; }
+marker path { fill: color-mix(in srgb, var(--accent) 76%, #facc15); }
+.graph-node circle {
+  fill: color-mix(in srgb, var(--surface) 82%, var(--accent));
+  stroke: var(--accent);
+  stroke-width: 0.75;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 45%, transparent));
+}
+.graph-node.victim circle { fill: #22c55e; stroke: #bbf7d0; }
+.graph-node.device circle { fill: #22d3ee; stroke: #cffafe; }
+.graph-node.case circle { fill: #a78bfa; stroke: #ede9fe; }
+.graph-node.bank_account circle, .graph-node.vpa circle { fill: #f97316; stroke: #fed7aa; }
+.graph-node text {
+  fill: var(--ink);
+  font-size: 2.6px;
+  font-weight: 800;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: color-mix(in srgb, var(--surface) 88%, transparent);
+  stroke-width: 0.8;
+}
+.graph-node .node-meta {
+  fill: var(--muted);
+  font-size: 2.1px;
+  font-weight: 700;
+}
+.graph-evidence {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.graph-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.graph-metrics span, .kill-switch {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+.graph-metrics b {
+  display: block;
+  color: var(--ink);
+  font-size: 18px;
+  margin-bottom: 3px;
+}
+.kill-switch strong { color: var(--accent); display: block; margin-bottom: 6px; }
+.edge-ledger {
+  display: grid;
+  gap: 7px;
+}
+.edge-ledger span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+.edge-ledger b {
+  color: var(--ink);
+  display: block;
+  font-size: 12px;
+}
 @media (max-width: 1000px) {
-  .tab-detail, .secondary-grid { grid-template-columns: 1fr; }
+  .tab-detail, .secondary-grid, .mule-graph-layout { grid-template-columns: 1fr; }
 }

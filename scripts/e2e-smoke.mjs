@@ -84,32 +84,35 @@ try {
     await page.waitForTimeout(80);
     assert(await tab.getAttribute('aria-pressed') === 'true', `Sidebar tab ${index + 1} did not become active.`);
   }
+  await page.getByRole('button', { name: 'Mule Graph AI' }).click();
 
   await page.getByLabel('RBAC role').selectOption('ADMIN');
   await page.getByRole('button', { name: 'Refresh' }).click();
   await waitForNotice(page, 'Loaded live synthetic API data');
 
   await clickAction(page, 0, 'domain decision');
+  await page.locator('.graph-canvas').waitFor({ timeout: 10000 });
+  await page.getByText('CIRCULAR_REFUND_LOOP').waitFor({ timeout: 10000 });
   await page.waitForFunction(() => {
     const result = document.querySelector('.recommendation-card strong');
     return result && result.textContent && !result.textContent.includes('Run model');
   }, { timeout: 10000 });
 
-  await clickAction(page, 1, 'mock UPI');
+  await clickAction(page, 2, 'mock UPI');
   await page.locator('.mock-card').filter({ hasText: 'RRN:' }).waitFor({ timeout: 10000 });
 
-  await clickAction(page, 2, 'create');
+  await clickAction(page, 3, 'create');
   await waitForNotice(page, 'Created test record');
-  await clickAction(page, 3, 'patch');
+  await clickAction(page, 4, 'patch');
   await waitForNotice(page, 'Patched drill-down record');
-  await clickAction(page, 4, 'delete');
+  await clickAction(page, 5, 'delete');
   await waitForNotice(page, 'Deleted');
 
   await page.getByLabel('RBAC role').selectOption('VIEWER');
   await waitForNotice(page, 'Loaded live synthetic API data');
-  await clickAction(page, 2, 'viewer create denial');
+  await clickAction(page, 3, 'viewer create denial');
   await waitForNotice(page, 'Create failed');
-  await clickAction(page, 4, 'viewer delete denial');
+  await clickAction(page, 5, 'viewer delete denial');
   await waitForNotice(page, 'Delete failed');
 
   await page.setViewportSize({ width: 390, height: 860 });

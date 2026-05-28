@@ -22,7 +22,10 @@ POST /api/interdiction-score
 
 Returns a recommendation, score, action, reason codes, and plain-language explanation for the product domain.
 
+GET /api/mule-graph
+
+Returns a synthetic but concrete mule-network graph for demo investigations. The response includes victim, merchant, VPA, device, bank-account, and case nodes; payment/onward-transfer/device-reuse/refund-loop edges; graph metrics; reason codes; investigator narrative; and a pre-settlement kill-switch recommendation.
+
 ## CRUD
 
 This repository implements list, create, update, and delete operations for risk entities and interdiction cases. Write endpoints require write permission. Delete endpoints require admin permission.
-

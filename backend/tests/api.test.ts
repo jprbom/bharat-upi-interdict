@@ -23,6 +23,20 @@ describe('Bharat UPI Interdict API', () => {
     expect(response.body.reasonCodes).toContain('FAST_ONWARD_TRANSFER');
   });
 
+  it('builds a complex mule graph from synthetic risk entities and cases', async () => {
+    const app = createApp(createTestDatabase());
+    const response = await request(app)
+      .get('/api/mule-graph')
+      .set('x-user-role', 'INVESTIGATOR');
+
+    expect(response.status).toBe(200);
+    expect(response.body.nodes.length).toBeGreaterThanOrEqual(7);
+    expect(response.body.edges.length).toBeGreaterThanOrEqual(8);
+    expect(response.body.metrics.circularFlowCount).toBeGreaterThan(0);
+    expect(response.body.reasonCodes).toContain('CIRCULAR_REFUND_LOOP');
+    expect(response.body.killSwitchRecommendation).toContain('pre-settlement hold');
+  });
+
   it('supports risk entity CRUD and protects destructive operations', async () => {
     const app = createApp(createTestDatabase());
     const forgedRole = await request(app)

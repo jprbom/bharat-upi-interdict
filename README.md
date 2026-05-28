@@ -49,6 +49,7 @@ The frontend now has working tabs, CTAs, row drill-downs, create/patch/delete CR
 | Tabs | Every sidebar tab changes active content and drill-down context. |
 | CRUD | The primary workspace can create, patch, inspect, and delete synthetic records. |
 | AI decision | `/interdiction-score` returns explainable reason codes. |
+| Mule graph | `/mule-graph` renders a complex synthetic laundering mesh with VPA, device, merchant, bank-account, victim, and case nodes. |
 | Mock UPI | `/api/mock-upi` returns RRN, UPI request id, bank reference, response code, settlement state, and webhook metadata. |
 
 ## BFSI / Fintech Benefit
