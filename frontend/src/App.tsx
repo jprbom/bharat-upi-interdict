@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import cytoscape from 'cytoscape';
 import { Activity, AlertTriangle, BrainCircuit, CheckCircle2, Database, Eye, FileCheck2, Lock, Network, RefreshCw, Route, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { apiRequest } from './api';
 import { formatValue, toneForRisk } from './lib/viewModel';
@@ -360,45 +361,252 @@ function DetailCard({ item }: { item: RecordItem }) {
 }
 
 function MuleGraphView({ graph }: { graph: MuleGraph }) {
-  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
-  const shortLabel = (value: string) => value.length > 18 ? value.slice(0, 16) + '..' : value;
+  const graphRef = useRef<HTMLDivElement>(null);
+  const [selectedNode, setSelectedNode] = useState(graph.nodes[0]);
+  const [selectedEdge, setSelectedEdge] = useState(graph.edges[0]);
+  const topRiskNodes = [...graph.nodes].sort((a, b) => b.riskScore - a.riskScore).slice(0, 3);
+  const shortLabel = (value: string) => value.length > 22 ? value.slice(0, 20) + '..' : value;
+
+  useEffect(() => {
+    if (!graphRef.current) return;
+
+    const cy = cytoscape({
+      container: graphRef.current,
+      boxSelectionEnabled: false,
+      elements: [
+        ...graph.nodes.map((node) => ({
+          data: {
+            ...node,
+            displayLabel: shortLabel(node.label)
+          },
+          position: {
+            x: node.x * 9.2,
+            y: node.y * 6.6
+          }
+        })),
+        ...graph.edges.map((edge) => ({
+          data: {
+            ...edge,
+            displayLabel: edge.edgeType.replaceAll('_', ' ')
+          }
+        }))
+      ],
+      layout: {
+        name: 'preset',
+        fit: true,
+        padding: 42,
+        animate: true,
+        animationDuration: 700,
+        animationEasing: 'ease-out'
+      },
+      style: [
+        {
+          selector: 'node',
+          style: {
+            label: 'data(displayLabel)',
+            width: 'mapData(riskScore, 0, 100, 34, 76)',
+            height: 'mapData(riskScore, 0, 100, 34, 76)',
+            'background-color': '#ef4444',
+            'background-gradient-stop-colors': '#fb7185 #facc15',
+            'background-gradient-direction': 'to-bottom-right',
+            'border-width': 3,
+            'border-color': '#fff7ed',
+            'font-size': 11,
+            'font-weight': 800,
+            color: '#111827',
+            'text-background-color': '#ffffff',
+            'text-background-opacity': 0.82,
+            'text-background-padding': 4,
+            'text-background-shape': 'roundrectangle',
+            'text-margin-y': 9,
+            'text-valign': 'bottom',
+            'text-halign': 'center',
+            'text-wrap': 'wrap',
+            'text-max-width': 98,
+            'overlay-padding': 8,
+            'overlay-color': '#ef4444',
+            'overlay-opacity': 0
+          }
+        },
+        {
+          selector: 'node[type = "VICTIM"]',
+          style: {
+            'background-color': '#22c55e',
+            'background-gradient-stop-colors': '#86efac #14b8a6'
+          }
+        },
+        {
+          selector: 'node[type = "DEVICE"]',
+          style: {
+            'background-color': '#06b6d4',
+            'background-gradient-stop-colors': '#67e8f9 #2563eb'
+          }
+        },
+        {
+          selector: 'node[type = "CASE"]',
+          style: {
+            'background-color': '#8b5cf6',
+            'background-gradient-stop-colors': '#c4b5fd #7c3aed',
+            shape: 'round-rectangle'
+          }
+        },
+        {
+          selector: 'node[type = "BANK_ACCOUNT"]',
+          style: {
+            'background-color': '#f97316',
+            'background-gradient-stop-colors': '#fdba74 #ea580c',
+            shape: 'hexagon'
+          }
+        },
+        {
+          selector: 'node[type = "VPA"]',
+          style: {
+            'background-color': '#f59e0b',
+            'background-gradient-stop-colors': '#fde68a #f59e0b',
+            shape: 'diamond'
+          }
+        },
+        {
+          selector: 'node:selected',
+          style: {
+            'border-color': '#0f172a',
+            'border-width': 5,
+            'overlay-opacity': 0.14
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            label: 'data(displayLabel)',
+            width: 'mapData(riskWeight, 0, 100, 2, 7)',
+            'curve-style': 'bezier',
+            'control-point-step-size': 42,
+            'line-color': '#ef4444',
+            'target-arrow-shape': 'triangle',
+            'target-arrow-color': '#ef4444',
+            'arrow-scale': 1.15,
+            opacity: 0.82,
+            'font-size': 9,
+            'font-weight': 800,
+            color: '#334155',
+            'text-background-color': '#ffffff',
+            'text-background-opacity': 0.74,
+            'text-background-padding': 3,
+            'text-rotation': 'autorotate',
+            'text-margin-y': -7
+          }
+        },
+        {
+          selector: 'edge[edgeType = "DEVICE_REUSE"]',
+          style: {
+            'line-color': '#06b6d4',
+            'target-arrow-color': '#06b6d4',
+            'line-style': 'dashed'
+          }
+        },
+        {
+          selector: 'edge[edgeType = "REFUND_LOOP"]',
+          style: {
+            'line-color': '#f97316',
+            'target-arrow-color': '#f97316',
+            'line-style': 'dotted'
+          }
+        },
+        {
+          selector: 'edge[edgeType = "CASE_LINK"]',
+          style: {
+            'line-color': '#8b5cf6',
+            'target-arrow-color': '#8b5cf6',
+            'line-style': 'dashed'
+          }
+        },
+        {
+          selector: 'edge:selected',
+          style: {
+            opacity: 1,
+            width: 8
+          }
+        }
+      ] as any
+    });
+
+    cy.on('tap', 'node', (event) => {
+      const data = event.target.data() as MuleGraph['nodes'][number] & { displayLabel: string };
+      setSelectedNode({
+        id: data.id,
+        label: data.label,
+        type: data.type,
+        riskScore: data.riskScore,
+        status: data.status,
+        amountAtRisk: data.amountAtRisk,
+        x: data.x,
+        y: data.y
+      });
+    });
+    cy.on('tap', 'edge', (event) => {
+      const data = event.target.data() as MuleGraph['edges'][number];
+      setSelectedEdge({
+        id: data.id,
+        source: data.source,
+        target: data.target,
+        label: data.label,
+        edgeType: data.edgeType,
+        amount: data.amount,
+        velocityMinutes: data.velocityMinutes,
+        riskWeight: data.riskWeight
+      });
+    });
+    cy.ready(() => {
+      cy.fit(undefined, 42);
+      cy.nodes('[riskScore >= 85]').select();
+      window.setTimeout(() => cy.nodes().unselect(), 850);
+    });
+
+    return () => cy.destroy();
+  }, [graph]);
+
   return (
     <div className="mule-graph-layout">
-      <div className="graph-canvas" aria-label="Complex mule money laundering graph">
-        <svg viewBox="0 0 100 86" role="img">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" />
-            </marker>
-          </defs>
-          {graph.edges.map((edge) => {
-            const source = nodeById.get(edge.source);
-            const target = nodeById.get(edge.target);
-            if (!source || !target) return null;
-            return (
-              <g key={edge.id}>
-                <line x1={source.x} y1={source.y} x2={target.x} y2={target.y} className={'graph-edge ' + edge.edgeType.toLowerCase()} markerEnd="url(#arrow)" />
-              </g>
-            );
-          })}
-          {graph.nodes.map((node) => (
-            <g key={node.id} className={'graph-node ' + node.type.toLowerCase()} transform={'translate(' + node.x + ' ' + node.y + ')'}>
-              <circle r={node.riskScore >= 85 ? 5.8 : 4.8} />
-              <text y="-7">{shortLabel(node.label)}</text>
-              <text y="9" className="node-meta">{node.type} / {node.status}</text>
-            </g>
-          ))}
-        </svg>
+      <div className="graph-stage">
+        <div className="graph-toolbar">
+          <div>
+            <span>Interactive fraud graph</span>
+            <strong>{graph.nodes.length} entities / {graph.edges.length} risk edges</strong>
+          </div>
+          <div className="graph-legend">
+            <span className="legend victim">Victim</span>
+            <span className="legend merchant">Merchant</span>
+            <span className="legend device">Device</span>
+            <span className="legend account">Sink</span>
+          </div>
+        </div>
+        <div ref={graphRef} className="graph-canvas" aria-label="Interactive complex mule money laundering graph" />
+        <div className="graph-hint">Pan, zoom, and tap nodes or edges to inspect evidence from the synthetic UPI test graph.</div>
       </div>
       <div className="graph-evidence">
         <strong>{graph.networkId}: {graph.title}</strong>
         <p>{graph.investigatorNarrative}</p>
+        <div className="selected-node-card">
+          <span>Selected entity</span>
+          <strong>{selectedNode.label}</strong>
+          <small>{selectedNode.type} / {selectedNode.status} / risk {selectedNode.riskScore}</small>
+          <small>Amount at risk: {formatValue('amount', selectedNode.amountAtRisk)}</small>
+        </div>
+        <div className="selected-node-card edge-card">
+          <span>Selected risk edge</span>
+          <strong>{selectedEdge.edgeType}</strong>
+          <small>{selectedEdge.label}</small>
+          <small>{formatValue('amount', selectedEdge.amount)} moved in {selectedEdge.velocityMinutes}m</small>
+        </div>
         <div className="graph-metrics">
           {Object.entries(graph.metrics).map(([key, value]) => <span key={key}><b>{formatValue(key, value)}</b>{key}</span>)}
         </div>
+        <div className="top-risk-strip">
+          {topRiskNodes.map((node) => <span key={node.id}><b>{node.riskScore}</b>{node.label}</span>)}
+        </div>
         <div className="reason-list">{graph.reasonCodes.map((code) => <span className="chip" key={code}>{code}</span>)}</div>
         <div className="edge-ledger">
-          {graph.edges.slice(0, 5).map((edge) => <span key={edge.id}><b>{edge.edgeType}</b>{edge.label} · {formatValue('amount', edge.amount)} · {edge.velocityMinutes}m</span>)}
+          {graph.edges.slice(0, 5).map((edge) => <span key={edge.id}><b>{edge.edgeType}</b>{edge.label} - {formatValue('amount', edge.amount)} - {edge.velocityMinutes}m</span>)}
         </div>
         <div className="kill-switch"><strong>Kill-switch</strong><p>{graph.killSwitchRecommendation}</p></div>
       </div>

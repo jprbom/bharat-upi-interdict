@@ -238,10 +238,64 @@ input { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; pad
   gap: 14px;
   align-items: stretch;
 }
-.graph-canvas {
-  min-height: 420px;
-  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+.graph-stage {
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(34, 211, 238, 0.16), transparent 20rem),
+    radial-gradient(circle at 86% 22%, rgba(239, 68, 68, 0.18), transparent 22rem),
+    color-mix(in srgb, var(--surface) 94%, #020617);
+}
+.graph-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+}
+.graph-toolbar span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+.graph-toolbar strong {
+  display: block;
+  color: var(--ink);
+  margin-top: 3px;
+}
+.graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+.legend {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--surface);
+}
+.legend::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: #ef4444;
+}
+.legend.victim::before { background: #22c55e; }
+.legend.device::before { background: #06b6d4; }
+.legend.account::before { background: #f97316; }
+.graph-canvas {
+  height: 510px;
+  min-height: 510px;
+  position: relative;
   overflow: hidden;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--line) 38%, transparent) 1px, transparent 1px),
@@ -249,6 +303,9 @@ input { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; pad
     radial-gradient(circle at 28% 36%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 22rem),
     color-mix(in srgb, var(--surface) 92%, #020617);
   background-size: 28px 28px, 28px 28px, auto, auto;
+}
+.graph-canvas canvas {
+  outline: none;
 }
 .graph-canvas svg {
   width: 100%;
@@ -298,10 +355,65 @@ marker path { fill: color-mix(in srgb, var(--accent) 76%, #facc15); }
   gap: 12px;
   align-content: start;
 }
+.selected-node-card {
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 8px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent),
+    color-mix(in srgb, var(--surface) 94%, transparent);
+  display: grid;
+  gap: 5px;
+}
+.selected-node-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.selected-node-card strong {
+  color: var(--ink);
+  line-height: 1.35;
+}
+.selected-node-card small {
+  color: var(--muted);
+}
+.edge-card {
+  border-color: color-mix(in srgb, #06b6d4 30%, var(--line));
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.11), transparent),
+    color-mix(in srgb, var(--surface) 94%, transparent);
+}
 .graph-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+.top-risk-strip {
+  display: grid;
+  gap: 7px;
+}
+.top-risk-strip span {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+.top-risk-strip b {
+  color: #dc2626;
+  font-size: 18px;
+}
+.graph-hint {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.72);
 }
 .graph-metrics span, .kill-switch {
   border: 1px solid var(--line);

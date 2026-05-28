@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -121,7 +121,7 @@ try {
 
   assert(consoleIssues.length === 0, `Console issues detected: ${consoleIssues.join('; ')}`);
 
-  console.log(JSON.stringify({
+  const report = {
     repo: pkg.name,
     url: frontendUrl,
     title,
@@ -137,7 +137,10 @@ try {
       mobileSmoke: true,
       consoleIssues: 0
     }
-  }, null, 2));
+  };
+  await mkdir(path.join(repoRoot, 'artifacts'), { recursive: true });
+  await writeFile(path.join(repoRoot, 'artifacts', 'e2e-report.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser.close();
 }
